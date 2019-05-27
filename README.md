@@ -5,5 +5,5 @@ It is based on [MySQL .NET Connector](https://github.com/mysql/mysql-connector-n
 * .NET Core project looks empty, but you can build by linking (or hard-copying) from .NET Framework project's source codes.
 
 # Supported version
-* >= .NET Framework 4.0
-* >= .NET Core 2.0
+* \>= .NET Framework 4.0
+* \>= .NET Core 2.0
