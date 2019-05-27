@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net45</TargetFramework>
+    <RootNamespace>Mach</RootNamespace>
+    <AssemblyName>machNetConnector</AssemblyName>
+    <Authors>MACHBASE</Authors>
+    <Company>MACHBASE</Company>
+    <Product>MACHBASE</Product>
+    <PackageId>machNetConnector</PackageId>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <Version>1.0.13</Version>
+    <Copyright>Copyright (c) 2010 MACHBASE Inc.</Copyright>
+    <Description />
+    <AssemblyVersion>1.0.13.2</AssemblyVersion>
+    <FileVersion>1.0.13.2</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Core\Data\**" />
+    <EmbeddedResource Remove="Core\Data\**" />
+    <None Remove="Core\Data\**" />
+  </ItemGroup>
+
+</Project>

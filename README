@@ -1,0 +1,8 @@
+### How to verify (on Windows, with .NET Core SDK)
+dotnet restore
+dotnet test MachConnector.Tests/*.csproj
+
+### How to ready MachConnector.dll
+1. Build MachConnector
+2. cp MachConnector/bin/Release/MachConnector.dll Release
+3. git commit && git push

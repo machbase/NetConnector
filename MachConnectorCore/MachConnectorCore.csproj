@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <PackageId>machNetConnectorCore</PackageId>
+    <Version>1.0.13</Version>
+    <Authors>MACHBASE</Authors>
+    <Company>MACHBASE</Company>
+    <Product>MACHBASE</Product>
+    <Copyright>Copyright (c) 2010 MACHBASE Inc.</Copyright>
+    <AssemblyName>machNetConnectorCore</AssemblyName>
+    <RootNamespace>Mach</RootNamespace>
+    <AssemblyVersion>1.0.13.2</AssemblyVersion>
+    <FileVersion>1.0.13.2</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+</Project>
