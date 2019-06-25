@@ -86,7 +86,9 @@ namespace Mach.Comm
                         { 
                             if (aAlterProtocol.ProtocolType != sHeader.Protocol)
                             {
-                                throw new MachException(MachErrorMsg.INVALID_PROTOCOL.FormatInvariant(aAlterProtocol.ProtocolType.ToString()));
+                                throw new MachException(MachErrorMsg.INVALID_PROTOCOL.FormatInvariant(
+                                                                                        aAlterProtocol.ProtocolType.ToString(),
+                                                                                        sHeader.Protocol));
                             }
                             else
                             {
@@ -95,7 +97,9 @@ namespace Mach.Comm
                         }
                         else
                         {
-                            throw new MachException(MachErrorMsg.INVALID_PROTOCOL.FormatInvariant(aProtocol.ProtocolType.ToString()));
+                            throw new MachException(MachErrorMsg.INVALID_PROTOCOL.FormatInvariant(
+                                                                                    aProtocol.ProtocolType.ToString(),
+                                                                                    sHeader.Protocol));
                         }
                     }
                     else

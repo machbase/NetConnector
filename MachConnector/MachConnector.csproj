@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFramework>net40</TargetFramework>
     <RootNamespace>Mach</RootNamespace>
     <AssemblyName>machNetConnector</AssemblyName>
     <Authors>MACHBASE</Authors>
@@ -9,11 +9,11 @@
     <Product>MACHBASE</Product>
     <PackageId>machNetConnector</PackageId>
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <Version>1.0.13</Version>
+    <Version>1.0.14</Version>
     <Copyright>Copyright (c) 2010 MACHBASE Inc.</Copyright>
     <Description />
-    <AssemblyVersion>1.0.13.2</AssemblyVersion>
-    <FileVersion>1.0.13.2</FileVersion>
+    <AssemblyVersion>1.0.14.0</AssemblyVersion>
+    <FileVersion>1.0.14.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

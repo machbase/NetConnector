@@ -9,7 +9,7 @@
         public static string INVALID_FETCH_PROTOCOL = "invalid protocol while fetching";
         public static string INVALID_EXECDIRECT_PROTOCOL = "invalid protocol while execdirect";
         public static string INVALID_FREE_PROTOCOL = "invalid protocol while closing";
-        public static string INVALID_PROTOCOL = "invalid protocol while {0}";
+        public static string INVALID_PROTOCOL = "invalid protocol while {0}. {1} protocol message has been arrived.";
         public static string INVALID_RETURN_PROTOCOL = "invalid protocol after executing({0} != {1})\n";
         public static string CONNECT_BROKER_FAILURE = "Connect broker failure";
         public static string REJECT_CONNECTION = "server rejected the connection";
