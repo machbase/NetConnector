@@ -165,7 +165,7 @@ namespace Mach.Data.MachClient
 
         internal void Unlock()
         {
-            m_lockObject.Exit(false);
+            m_lockObject.Exit(true); // use memory barrier
         }
 
         internal bool TryLock()
