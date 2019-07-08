@@ -44,9 +44,16 @@ namespace Mach.Data.MachClient
 
             // regardless of connection success
             if (m_command != null)
-            { 
-                m_command.IsAppendOpened = false;
-                m_command.QueryUsed = false;
+            {
+                if (!m_command.IsDisposed())
+                {
+                    m_command.IsAppendOpened = false;
+                    m_command.QueryUsed = false;
+                }
+                else
+                {
+                    m_command = null;
+                }
             }
 
             try
@@ -91,7 +98,10 @@ namespace Mach.Data.MachClient
         {
             if (m_command != null)
             {
-                m_command.Cancel();
+                if (!m_command.IsDisposed())
+                { 
+                    m_command.Cancel();
+                }
             }
 
             SetState(aState); // regardless of open status

@@ -74,6 +74,11 @@ namespace Mach.Data.MachClient
             }
         }
 
+        public bool IsDisposed()
+        {
+            return disposed;
+        }
+
         ~MachCommand()
         {
             Dispose(false);
