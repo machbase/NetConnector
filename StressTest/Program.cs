@@ -38,7 +38,7 @@ namespace TestBed
 
         private static MachConnection gConn;
 
-        public static bool DB_SELECT(MachConnection connection, string iConditionQuery, ErrorCheckType aCheckType, ref string query)
+        public static bool DoSelect(MachConnection connection, string iConditionQuery, ErrorCheckType aCheckType, ref string query)
         {
             MachDataReader rs = null;
             Random r = new Random();
@@ -46,12 +46,13 @@ namespace TestBed
             string field = "*";
             string sql = "";
 
-            // TODO
-            //if (iConditionQuery.Trim() == string.Empty)
-            //    sql = "select " + field + " from " + tableName;
-            //else
-            //    sql = "select " + field + " from " + tableName + " where " + iConditionQuery;
-            query = "select * from VOL_TABLE where tagid = @id limit 1";
+            if (iConditionQuery.Trim() == string.Empty)
+                sql = "select " + field + " from " + tableName;
+            else
+                sql = "select " + field + " from " + tableName + " where " + iConditionQuery;
+
+            // TODO hard-copy?
+            query = sql;
 
             try
             {
@@ -142,19 +143,20 @@ namespace TestBed
             return true;
         }
 
-        private static void ExecuteQuery(ref MachConnection aConn, string aQueryString, ErrorCheckType aCheckType)
+        private static void ExecuteQuery(MachConnection aConn, string aQueryString, ErrorCheckType aCheckType)
         {
-            // 쿼리 수행 전 연결 확인
             try
             {
                 Console.WriteLine("== Entering ExecuteQuery " + aConn.State);
 
+                // 쿼리 수행 전 연결 확인
                 if (!aConn.IsConnected())
                 {
                     Console.WriteLine("Retrying to connect...");
                     aConn.Open();
                 }
 
+                // 쿼리 수행
                 using (MachCommand sCommand = new MachCommand(aQueryString, aConn))
                 {
                     try
@@ -191,6 +193,26 @@ namespace TestBed
             }
         }
 
+        static void ExecuteQueryWithRetry(MachConnection aConn, string aQueryString, ErrorCheckType aCheckType, int aRetryCount)
+        {
+            for (int attempts = 0; attempts < aRetryCount; attempts++)
+            {
+                try
+                {
+                    ExecuteQuery(aConn, aQueryString, aCheckType);
+                    break;
+                }
+                catch (SocketException)
+                {
+                    // Nothing to do but retry...
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
+            }
+        }
+
         static void SelectThread()
         {
             MachConnection sConn = new MachConnection(String.Format("DSN={0};PORT_NO={1};UID=SYS;PWD=MANAGER", SERVER_HOST, SERVER_PORT));
@@ -204,15 +226,15 @@ namespace TestBed
 
                 String sCondition = "";
                 String sQuery = "SELECT";
-                if (!DB_SELECT(sConn, sCondition, ErrorCheckType.ERROR_CHECK_YES, ref sQuery))
-                {
-                    Console.WriteLine("What is this?? error??");
-                    break;
-                }
-                else
-                {
-                    // Nothing to do but continue
-                }
+                //if (!DB_SELECT(sConn, sCondition, ErrorCheckType.ERROR_CHECK_YES, ref sQuery))
+                //{
+                //    Console.WriteLine("What is this?? error??");
+                //    break;
+                //}
+                //else
+                //{
+                //    // Nothing to do but continue
+                //}
                 i++;
                 Thread.Sleep(100); // 송부받은 Spec 대로 100ms sleep
             }
@@ -245,70 +267,37 @@ namespace TestBed
             }
         }
 
-        //static void connectDB(ref MachConnection sConnect)
-        //{
-        //    for(int attempts = 0; attempts < 5; attempts++)
-        //    {
-        //        try
-        //        {
-        //            sConnect.Open();
-        //        }
-        //        catch { } // don't catch anything
-        //        Thread.Sleep(50);
-        //    }
-        //}
-
         static void Main(string[] args)
         {
-            //DROP TABLE && CREATE TABLE
+            String sResultQuery = "";
+
             gConn = new MachConnection(String.Format("DSN={0};PORT_NO={1};UID=SYS;PWD=MANAGER", SERVER_HOST, SERVER_PORT));
+            // TODO UPSERT 는 다른 Connection 을 만들어서 써야 한다.
 
-            for (int attempts = 0; attempts < 10; attempts++)
+            try
             {
-                try
+                // DROP TABLE & CREATE TABLE
+                ExecuteQueryWithRetry(gConn, "DROP TABLE " + tableName + ";", ErrorCheckType.ERROR_CHECK_NO, 10);
+                ExecuteQueryWithRetry(gConn, sCreateQuery, ErrorCheckType.ERROR_CHECK_YES, 10);
+
+                // SELECT
+                //DoSelect(gConn, "", ErrorCheckType.ERROR_CHECK_YES, ref sResultQuery);
+            }
+            catch (MachException me)
+            {
+                if (me.MachErrorCode == 2024) // table already exists
                 {
-                    ExecuteQuery(ref gConn, "DROP TABLE " + tableName + ";", ErrorCheckType.ERROR_CHECK_NO);
-                    break;
+                    Console.WriteLine(">> Warning. CREATE_TABLE is succeeded before something is wrong... but that's okay.");
                 }
-                catch (SocketException)
+                else
                 {
-                    // Nothing to do but retry...
-                }
-                catch (Exception e)
-                {
-                    throw e;
+                    throw me;
                 }
             }
-
-            for (int attempts = 0; attempts < 10; attempts++)
+            catch (Exception e)
             {
-                try
-                {
-                    ExecuteQuery(ref gConn, sCreateQuery, ErrorCheckType.ERROR_CHECK_YES);
-                    break;
-                }
-                catch (SocketException)
-                {
-                    // Nothing to do but retry...
-                }
-                catch (Exception e)
-                {
-                    throw e;
-                }
+                throw e;
             }
-
-            //retry_upsert:
-            //try
-            //{
-
-            //    UpsertThread();
-            //}
-            //catch (Exception e)
-            //{
-            //    Console.WriteLine("{0}", e.ToString());
-            //    goto retry_upsert;
-            //}
-
 
             //Thread t1 = new Thread(new ThreadStart(SelectThread));
             //Thread t2 = new Thread(new ThreadStart(UpsertThread));

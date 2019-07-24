@@ -10,6 +10,11 @@ namespace Mach.Data.MachClient
         {
         }
 
+        internal MachException(int errorcode, string message)
+            : this(errorcode, message, null)
+        {
+        }
+
         internal MachException(string message, Exception innerException)
             : this(0, message, innerException)
         {
