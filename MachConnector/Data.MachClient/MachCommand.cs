@@ -65,7 +65,14 @@ namespace Mach.Data.MachClient
                     Cancel();
                     if (Connection != null)
                     {
-                        Connection.SetState(ConnectionState.Open);
+                        if (Connection.IsConnected())
+                        {
+                            Connection.SetState(ConnectionState.Open);
+                        }
+                        else
+                        {
+                            // Nothing to do but leave as it is
+                        }
                     }
                 }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Mach.Data.MachClient;
@@ -21,7 +22,7 @@ namespace TestBed
         internal const string SERVER_HOST = "192.168.0.31";
         internal const int SERVER_PORT = 23000;
         static String tableName = "VOL_TABLE";
-        //static String sCreateQuery = @"CREATE TABLE VOL_TABLE (TAGID       varchar(100),
+        //static String sCreateQuery = @"CREATE TABLE VOL_TABLE (TAGID    varchar(100),
         //                                                       SENSORID varchar(100),
         //                                                       REGTIME datetime,
         //                                                       VALUE11_RMS double,
@@ -77,10 +78,6 @@ namespace TestBed
                             break;
                         case ErrorCheckType.ERROR_CHECK_WARNING:
                             Console.WriteLine("[WARNING!]");
-                            Console.WriteLine("{0}", me.ToString());
-                            break;
-                        case ErrorCheckType.ERROR_CHECK_RETRY:
-                            Console.WriteLine("[RETRY]");
                             Console.WriteLine("{0}", me.ToString());
                             break;
                         case ErrorCheckType.ERROR_CHECK_NO:
@@ -150,40 +147,24 @@ namespace TestBed
             // 쿼리 수행 전 연결 확인
             try
             {
+                Console.WriteLine("== Entering ExecuteQuery " + aConn.State);
+
                 if (!aConn.IsConnected())
                 {
+                    Console.WriteLine("Retrying to connect...");
                     aConn.Open();
-                }
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
-
-            bool sExitQuery = true;
-
-            if (aCheckType == ErrorCheckType.ERROR_CHECK_RETRY)
-                sExitQuery = false;
-
-            for (int attempts = 0; attempts < 5; attempts++)
-            {
-retry_label:
-                try
-                {
-                    if (!aConn.IsConnected())
-                    {
-                        aConn.Open();
-                    }
-
-                } catch (Exception e) {
-                    goto retry_label;
                 }
 
                 using (MachCommand sCommand = new MachCommand(aQueryString, aConn))
                 {
                     try
                     {
+                        Console.WriteLine("Ready to execute...");
                         sCommand.ExecuteNonQuery();
+                    }
+                    catch (SocketException se)
+                    {
+                        throw se;
                     }
                     catch (Exception me)
                     {
@@ -195,26 +176,24 @@ retry_label:
                                 Console.WriteLine("[WARNING!]");
                                 Console.WriteLine("{0}", me.ToString());
                                 break;
-                            case ErrorCheckType.ERROR_CHECK_RETRY:
-                                Console.WriteLine("[RETRY]");
-                                Console.WriteLine("{0}", me.ToString());
-                                break;
                             case ErrorCheckType.ERROR_CHECK_NO:
                             default:
                                 break;
                         }
                     }
                 }
-
-                if (sExitQuery)
-                    break;
+                Console.WriteLine("== Exiting ExecuteQuery() " + aQueryString + " is succceeded. (Its state : " + aConn.State + ")");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("== Exiting ExecuteQuery() " + aQueryString + " is failed. (Its state : " + aConn.State + " and exception type : " + e.GetType() + ")");
+                throw e;
             }
         }
 
         static void SelectThread()
         {
             MachConnection sConn = new MachConnection(String.Format("DSN={0};PORT_NO={1};UID=SYS;PWD=MANAGER", SERVER_HOST, SERVER_PORT));
-            connectDB(ref sConn);
 
             int i = 0;
 
@@ -237,15 +216,12 @@ retry_label:
                 i++;
                 Thread.Sleep(100); // 송부받은 Spec 대로 100ms sleep
             }
-
-            disconnectDB(ref sConn);
         }
 
         static void UpsertThread()
         {
             int i = 0;
             MachConnection sConn = new MachConnection(String.Format("DSN={0};PORT_NO={1};UID=SYS;PWD=MANAGER", SERVER_HOST, SERVER_PORT));
-            connectDB(ref sConn);
 
             //String sQuery = "INSERT INTO VOL_TABLE VALUES (@id, @sensorid, @regtime, @value1, @value2, @value3, @value4, @value5, @value6)";
             String sQuery = "INSERT INTO VOL_TABLE VALUES (@id) ON DUPLICATE KEY UPDATE";
@@ -267,29 +243,59 @@ retry_label:
                 Thread.Sleep(100);
                 i++;
             }
-
-            disconnectDB(ref sConn);
         }
 
-        static void connectDB(ref MachConnection sConnect)
-        {
-            for(int attempts = 0; attempts < 5; attempts++)
-            {
-                try
-                {
-                    sConnect.Open();
-                }
-                catch { } // don't catch anything
-                Thread.Sleep(50);
-            }
-        }
+        //static void connectDB(ref MachConnection sConnect)
+        //{
+        //    for(int attempts = 0; attempts < 5; attempts++)
+        //    {
+        //        try
+        //        {
+        //            sConnect.Open();
+        //        }
+        //        catch { } // don't catch anything
+        //        Thread.Sleep(50);
+        //    }
+        //}
 
         static void Main(string[] args)
         {
             //DROP TABLE && CREATE TABLE
             gConn = new MachConnection(String.Format("DSN={0};PORT_NO={1};UID=SYS;PWD=MANAGER", SERVER_HOST, SERVER_PORT));
-            ExecuteQuery(ref gConn, "DROP TABLE " + tableName + ";", ErrorCheckType.ERROR_CHECK_NO);
-            ExecuteQuery(ref gConn, sCreateQuery, ErrorCheckType.ERROR_CHECK_RETRY);
+
+            for (int attempts = 0; attempts < 10; attempts++)
+            {
+                try
+                {
+                    ExecuteQuery(ref gConn, "DROP TABLE " + tableName + ";", ErrorCheckType.ERROR_CHECK_NO);
+                    break;
+                }
+                catch (SocketException)
+                {
+                    // Nothing to do but retry...
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
+            }
+
+            for (int attempts = 0; attempts < 10; attempts++)
+            {
+                try
+                {
+                    ExecuteQuery(ref gConn, sCreateQuery, ErrorCheckType.ERROR_CHECK_YES);
+                    break;
+                }
+                catch (SocketException)
+                {
+                    // Nothing to do but retry...
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
+            }
 
             //retry_upsert:
             //try

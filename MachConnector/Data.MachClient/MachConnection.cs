@@ -66,8 +66,6 @@ namespace Mach.Data.MachClient
                 Session.PrepareSocket(DefaultConnectionTimeout); // == aConnSetting.ConnectionTimeout
                 Session.ConnectUser(m_connectionSettings, DefaultConnectionTimeout); // == aConnSetting.ConnectionTimeout
                 SetState(ConnectionState.Open);
-
-                
             }
             catch (Exception e)
             {
