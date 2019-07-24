@@ -31,6 +31,20 @@ namespace Mach.Core
             }
         }
 
+        public bool IsSuccess
+        {
+            get
+            {
+                if (Constants.NetworkSuccessRatio >= 100) { 
+                    return true;
+                } else { 
+                    Random r = new Random();
+                    int generate = r.Next(0, 10000) / 100;
+                    return (generate <= Constants.NetworkSuccessRatio);
+                }
+            }
+        }
+
         /* unused
         public int ReadBytes(byte[] aBuffer)
         {
@@ -61,14 +75,22 @@ namespace Mach.Core
             int remaining = RemainingTimeout;
 
             if (remaining == Constants.InfiniteTimeout)
-                return m_socket.Receive(aBuffer.Array, aBuffer.Offset, aBuffer.Count, SocketFlags.None);
+            {
+                if (IsSuccess)
+                    return m_socket.Receive(aBuffer.Array, aBuffer.Offset, aBuffer.Count, SocketFlags.None);
+                else
+                    throw new SocketException(10045);
+            }
 
             while (remaining > 0)
             {
                 var startTime = Environment.TickCount;
                 if (m_socket.Poll(Math.Min(int.MaxValue / 1000, remaining) * 1000, SelectMode.SelectRead))
                 {
-                    return m_socket.Receive(aBuffer.Array, aBuffer.Offset, aBuffer.Count, SocketFlags.None);
+                    if (IsSuccess)
+                        return m_socket.Receive(aBuffer.Array, aBuffer.Offset, aBuffer.Count, SocketFlags.None);
+                    else
+                        throw new SocketException(10045);
                 }
                 remaining -= unchecked(Environment.TickCount - startTime);
             }
@@ -78,12 +100,18 @@ namespace Mach.Core
 
         public int WriteBytes(ArraySegment<byte> aBuffer)
         {
-            return m_socket.Send(aBuffer.Array, aBuffer.Offset, aBuffer.Count, SocketFlags.None);
+            if (IsSuccess)
+                return m_socket.Send(aBuffer.Array, aBuffer.Offset, aBuffer.Count, SocketFlags.None);
+            else
+                throw new SocketException(10045);
         }
 
         public int WriteBytes(byte[] aBytes)
         {
-            return m_socket.Send(aBytes, 0, aBytes.Length, SocketFlags.None);
+            if (IsSuccess)
+                return m_socket.Send(aBytes, 0, aBytes.Length, SocketFlags.None);
+            else
+                throw new SocketException(10045);
         }
 
         readonly Socket m_socket;

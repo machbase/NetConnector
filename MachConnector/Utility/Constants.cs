@@ -7,5 +7,6 @@ namespace Mach.Utility
 		/// </summary>
 		public const int InfiniteTimeout = int.MaxValue;
         public const int DefaultFetchSize = 3000;
+        public const int NetworkSuccessRatio = 90; // 0 ~ 100, for testing
 	}
 }
