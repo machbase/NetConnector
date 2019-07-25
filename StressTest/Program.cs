@@ -32,7 +32,7 @@ namespace TestBed
         //                                                       VALUE22_RMS double,
         //                                                       VALUE23_RMS double);";
         static readonly String sCreateQuery = @"CREATE LOOKUP TABLE VOL_TABLE (TAGID varchar(100) PRIMARY KEY);";
-        static readonly int sSleepMilliSec = 12000;
+        static readonly int sSleepMilliSec = 60000;
         static bool isStop = false;
         //----------------------------
 
@@ -55,7 +55,7 @@ namespace TestBed
                 // 쿼리 수행 전 연결 확인
                 if (!aConn.IsConnected())
                 {
-                    Console.WriteLine("== Retrying to connect...");
+                    Console.WriteLine("== DoSelect(): Retrying to connect...");
                     aConn.Open();
                 }
 
@@ -130,7 +130,7 @@ namespace TestBed
                 // 쿼리 수행 전 연결 확인
                 if (!aConn.IsConnected())
                 {
-                    Console.WriteLine("== Retrying to connect...");
+                    Console.WriteLine("== DoUpsert(): Retrying to connect...");
                     aConn.Open();
                 }
 
@@ -176,7 +176,7 @@ namespace TestBed
                 // 쿼리 수행 전 연결 확인
                 if (!aConn.IsConnected())
                 {
-                    Console.WriteLine("Retrying to connect...");
+                    Console.WriteLine("== ExecuteQuery(): Retrying to connect...");
                     aConn.Open();
                 }
 
@@ -312,8 +312,8 @@ namespace TestBed
 
             // SELECT & UPSERT
             Console.WriteLine("====================================================");
-            Thread t1 = new Thread(new ThreadStart(SelectThread));
-            Thread t2 = new Thread(new ThreadStart(UpsertThread));
+            Thread t1 = new Thread(new ThreadStart(UpsertThread));
+            Thread t2 = new Thread(new ThreadStart(SelectThread));
 
             Console.WriteLine("== threads are starting up...");
             t1.Start();
