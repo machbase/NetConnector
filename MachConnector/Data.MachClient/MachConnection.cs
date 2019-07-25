@@ -97,8 +97,10 @@ namespace Mach.Data.MachClient
             if (m_command != null)
             {
                 if (!m_command.IsDisposed())
-                { 
-                    m_command.Cancel();
+                {
+                    // if ConnectionState.Broken, you don't have to send FREE protocol msg.
+                    if (aState != ConnectionState.Broken)
+                        m_command.Cancel();
                 }
             }
 

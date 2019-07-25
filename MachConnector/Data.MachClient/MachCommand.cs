@@ -62,11 +62,12 @@ namespace Mach.Data.MachClient
                     m_commandExecutor = null;
                     m_parameterCollection = null;
                     m_isAppendOpened = false;
-                    Cancel();
+
                     if (Connection != null)
                     {
                         if (Connection.IsConnected())
                         {
+                            Cancel();
                             Connection.SetState(ConnectionState.Open);
                         }
                         else
@@ -220,6 +221,10 @@ namespace Mach.Data.MachClient
 
                 throw se;
             }
+            catch (Exception e)
+            {
+                throw e;
+            }
             finally
             {
                 m_connection.Unlock();
@@ -293,9 +298,13 @@ namespace Mach.Data.MachClient
 
                     throw se;
                 }
-                catch (MachAppendException e)
+                catch (MachAppendException mae)
                 {
-                    aWriter.CallErrorDelegator(e);
+                    aWriter.CallErrorDelegator(mae);
+                }
+                catch (Exception e)
+                {
+                    throw e;
                 }
             }
         }
@@ -336,7 +345,11 @@ namespace Mach.Data.MachClient
 
                 throw se;
             }
-            catch (MachException e)
+            catch (MachException me)
+            {
+                throw me;
+            }
+            catch (Exception e)
             {
                 throw e;
             }
@@ -392,6 +405,10 @@ namespace Mach.Data.MachClient
                 aWriter.CallErrorDelegator(e);
                 goto Retry;
             }
+            catch (Exception e)
+            {
+                throw e;
+            }
             finally
             {
                 m_isAppendOpened = false;
@@ -431,6 +448,10 @@ namespace Mach.Data.MachClient
 
                 throw se;
             }
+            catch (Exception e)
+            {
+                throw e;
+            }
             finally
             {
                 m_connection.Unlock();
@@ -466,6 +487,10 @@ namespace Mach.Data.MachClient
                 m_isAppendOpened = false;
 
                 throw se;
+            }
+            catch (Exception e)
+            {
+                throw e;
             }
             finally
             {
@@ -515,6 +540,11 @@ namespace Mach.Data.MachClient
 
                 throw se;
             }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            // TODO MachException did not caught.. and is it right? (잡아야 할까?)
             finally
             {
                 m_connection.Unlock();
