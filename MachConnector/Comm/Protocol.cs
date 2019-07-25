@@ -84,7 +84,7 @@ namespace Mach.Comm
 
         public static void CheckResult(this Protocol aProtocol, Packet aPacket)
         {
-            long sErrNum = aPacket.GetInt();
+            int sErrNum = aPacket.GetInt();
             Result sResult = (Result)aPacket.GetInt(4);
 
             if (sResult != Result.OK)
@@ -105,7 +105,7 @@ namespace Mach.Comm
                     sNext = aProtocol.ReadNext();
                 }
 
-                throw new MachException(String.Format("[ERR-{0:00000} : {1}]", sErrNum, sMsg));
+                throw new MachException(sErrNum, String.Format("[ERR-{0:00000} : {1}]", sErrNum, sMsg));
             }
         }
 

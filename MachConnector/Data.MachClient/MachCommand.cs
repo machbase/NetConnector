@@ -62,10 +62,18 @@ namespace Mach.Data.MachClient
                     m_commandExecutor = null;
                     m_parameterCollection = null;
                     m_isAppendOpened = false;
-                    Cancel();
+
                     if (Connection != null)
                     {
-                        Connection.SetState(ConnectionState.Open);
+                        if (Connection.IsConnected())
+                        {
+                            Cancel();
+                            Connection.SetState(ConnectionState.Open);
+                        }
+                        else
+                        {
+                            // Nothing to do but leave as it is
+                        }
                     }
                 }
 
@@ -286,9 +294,9 @@ namespace Mach.Data.MachClient
 
                     throw se;
                 }
-                catch (MachAppendException e)
+                catch (MachAppendException mae)
                 {
-                    aWriter.CallErrorDelegator(e);
+                    aWriter.CallErrorDelegator(mae);
                 }
             }
         }
@@ -329,9 +337,9 @@ namespace Mach.Data.MachClient
 
                 throw se;
             }
-            catch (MachException e)
+            catch (MachException me)
             {
-                throw e;
+                throw me;
             }
             finally
             {

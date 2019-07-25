@@ -66,8 +66,6 @@ namespace Mach.Data.MachClient
                 Session.PrepareSocket(DefaultConnectionTimeout); // == aConnSetting.ConnectionTimeout
                 Session.ConnectUser(m_connectionSettings, DefaultConnectionTimeout); // == aConnSetting.ConnectionTimeout
                 SetState(ConnectionState.Open);
-
-                
             }
             catch (Exception e)
             {
@@ -99,8 +97,10 @@ namespace Mach.Data.MachClient
             if (m_command != null)
             {
                 if (!m_command.IsDisposed())
-                { 
-                    m_command.Cancel();
+                {
+                    // if ConnectionState.Broken, you don't have to send FREE protocol msg.
+                    if (aState != ConnectionState.Broken)
+                        m_command.Cancel();
                 }
             }
 
