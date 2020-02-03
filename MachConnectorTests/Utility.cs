@@ -13,8 +13,8 @@ namespace MachConnectorTests
 
     internal static class Utility
     {
-        internal const string SERVER_HOST = "192.168.0.33";
-        internal const int SERVER_PORT = 23000;
+        internal const string SERVER_HOST = "127.0.0.1";
+        internal const int SERVER_PORT = 5656;
         internal static string SERVER_STRING
         {
             get

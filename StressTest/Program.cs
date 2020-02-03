@@ -19,8 +19,8 @@ namespace TestBed
     {
         //----------------------------
         // configurable parameters
-        internal const string SERVER_HOST = "192.168.0.31";
-        internal const int SERVER_PORT = 23000;
+        internal const string SERVER_HOST = "127.0.0.1";
+        internal const int SERVER_PORT = 5656;
         static readonly String tableName = "VOL_TABLE";
         //static String sCreateQuery = @"CREATE TABLE VOL_TABLE (TAGID    varchar(100),
         //                                                       SENSORID varchar(100),

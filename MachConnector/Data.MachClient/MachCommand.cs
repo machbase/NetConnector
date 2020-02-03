@@ -111,6 +111,11 @@ namespace Mach.Data.MachClient
             get => m_parameterCollection;
             set => m_parameterCollection = value;
         }
+        public new MachParameterCollection Parameters
+        {
+            get => m_parameterCollection;
+            set => m_parameterCollection = value;
+        }
         public override string CommandText { get; set; }
         public override int CommandTimeout
         {
@@ -419,8 +424,9 @@ namespace Mach.Data.MachClient
             m_connection.SetState(ConnectionState.Executing);
 
             try
-            { 
-                var sObj = CommandExecutor.ExecuteNonQuery(CommandText, ParameterCollection);
+            {
+                //var sObj = CommandExecutor.ExecuteNonQuery(CommandText, ParameterCollection);
+                var sObj = CommandExecutor.ExecuteNonQuery(CommandText, m_parameterCollection);
                 m_connection.SetState(ConnectionState.Open);
                 Cancel();
                 return sObj;
@@ -456,7 +462,8 @@ namespace Mach.Data.MachClient
 
             try
             {
-                var sObj = CommandExecutor.ExecuteScalar(CommandText, ParameterCollection);
+                //var sObj = CommandExecutor.ExecuteScalar(CommandText, ParameterCollection);
+                var sObj = CommandExecutor.ExecuteScalar(CommandText, m_parameterCollection);
                 m_connection.SetState(ConnectionState.Open);
                 Cancel();
                 return sObj;
@@ -477,7 +484,7 @@ namespace Mach.Data.MachClient
         public override void Prepare()
         {
             // NOTE: Prepared statements in Mach are not currently supported.
-            throw new NotSupportedException();
+            //throw new NotSupportedException();
         }
 
         protected override DbParameter CreateDbParameter()
@@ -507,7 +514,8 @@ namespace Mach.Data.MachClient
             try
             {
                 m_queryUsed = true;
-                return CommandExecutor.ExecuteRead(CommandText, ParameterCollection, aBehavior);
+                //return CommandExecutor.ExecuteRead(CommandText, ParameterCollection, aBehavior);
+                return CommandExecutor.ExecuteRead(CommandText, m_parameterCollection, aBehavior);
             }
             catch (SocketException se)
             {
