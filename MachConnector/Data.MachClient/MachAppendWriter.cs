@@ -64,7 +64,7 @@ namespace Mach.Data.MachClient
             ErrorDelegateFunc = aFunc;
         }
 
-        internal void writeData(List<object> aDataList, ulong aArrivalTime)
+        internal void writeData(List<object> aDataList, ulong aArrivalTime, List<string> aDateFormatList)
         {
             if (Meta.ColumnCount == 0)
                 throw new MachException(MachErrorMsg.INVALID_APPEND_OPEN);
@@ -89,13 +89,36 @@ namespace Mach.Data.MachClient
             };
             Array.Clear(sNullArray, 0, sSum);
 
-            // create dataList locally to concat 
+            // create dataList locally to concat
             List<byte[]> sAppendList = new List<byte[]>();
 
             if (aArrivalTime == 0)
                 SetNullBit(0, sNullArray);
             else
                 sAppendList.Add(BitConverter.GetBytes(aArrivalTime));
+
+            if (aDateFormatList != null)
+            {
+                if (aDateFormatList.Count == 1)
+                {
+                    m_dateFormat.Clear();
+                    m_dateFormat.Add(aDateFormatList[0]);
+                }
+                else
+                {
+                    foreach (string aDateFormat in aDateFormatList)
+                    {
+                        if (m_dateFormat.Contains(aDateFormat) == false)
+                        {
+                            m_dateFormat.Add(aDateFormat);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Nothing to do.
+            }
 
             // if DBNull.Value, then change to NULL value below
             for (int i = 0; i < Meta.ColumnCount - 1; i++)
@@ -149,7 +172,7 @@ namespace Mach.Data.MachClient
                     // compare its compatible type and check
                     // BUGUBG DateTime is multi-typed value so skip it
                     if (Meta.ColumnMetadataList[i + 1].ColumnType != MachDBType.DATE)
-                    { 
+                    {
                         if (Meta.ColumnMetadataList[i + 1].ColumnType.GetCompatibleType() != aDataList[i].GetType())
                         {
                             throw new MachException(
@@ -279,14 +302,14 @@ namespace Mach.Data.MachClient
                                 bool sInserted = false;
 
                                 foreach (string sFormatString in m_dateFormat)
-                                { 
+                                {
                                     try
                                     {
                                         sAppendTime = DateTime.ParseExact((string)aDataList[i], sFormatString, System.Globalization.CultureInfo.InvariantCulture);
                                         long sTicks = sAppendTime.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
                                         if (sTicks < 0)
-                                        { 
+                                        {
                                             throw new MachException("DateTime to append at {0} is less than 1970-01-01.".FormatInvariant(aDataList[i]));
                                         }
 
@@ -297,7 +320,7 @@ namespace Mach.Data.MachClient
                                     }
                                     catch (FormatException e)
                                     {
-                                        throw e;
+                                        continue;
                                     }
                                 }
 
@@ -321,7 +344,7 @@ namespace Mach.Data.MachClient
 
             // do not include HEAD's length
             long sLength = sRowList.Values.Sum(a => ((a == null) ? 0 : a.Length)) - sRowList["HEAD"].Length;
-            
+
             if (sLength % 8 > 0)
             {
                 int sPadLength = 8 - (int)(sLength % 8);
@@ -384,7 +407,7 @@ namespace Mach.Data.MachClient
                 }
             }
             else //ipv4 null
-            { 
+            {
                 for (int i = 0; i < 5; i++)
                 {
                     returnIP[pos++] = 0;
@@ -406,7 +429,7 @@ namespace Mach.Data.MachClient
                 {
                     IPAddress address = IPAddress.Parse(aIp);
                     byte[] sBuf = address.GetAddressBytes();
-                    
+
                     returnIP[pos++] = 16;
                     Array.Copy(sBuf, 0, returnIP, 1, 16);
 
@@ -439,7 +462,7 @@ namespace Mach.Data.MachClient
                 }
             }
             else //ipv6 null
-            { 
+            {
                 for (i = 0; i < 17; i++)
                 {
                     returnIP[pos++] = 0;
@@ -475,8 +498,10 @@ namespace Mach.Data.MachClient
 
         public const int MAX_BINARY_LENGTH = 64 * 1024 * 1024;
 
-        private string[] m_dateFormat =
+        // m_dateFormat list Initialize
+        private List<string> m_dateFormat = new List<string>
         {
+            "yyyy-MM-dd HH:mm:ss fffffff",
             "yyyy-MM-dd HH:mm:ss ffffff",
             "yyyy-MM-dd HH:mm:ss fff",
             "yyyy-MM-dd HH:mm:ss",

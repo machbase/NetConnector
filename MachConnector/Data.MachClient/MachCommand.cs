@@ -244,10 +244,45 @@ namespace Mach.Data.MachClient
 
         public void AppendData(MachAppendWriter aWriter, List<object> aDataList)
         {
-            AppendDataWithTime(aWriter, aDataList, 0);
+            AppendDataWithTime(aWriter, aDataList, 0, null);
         }
 
-        public void AppendDataWithTime(MachAppendWriter aWriter, List<object> aDataList, DateTime aArrivalTime)
+        public void AppendData(MachAppendWriter aWriter, List<object> aDataList, string aDateFormat = null)
+        {
+            List<string> sDateFormatList = null;
+            if (aDateFormat != null)
+            {
+                sDateFormatList = new List<string>();
+                sDateFormatList.Add(aDateFormat);
+            }
+
+            AppendDataWithTime(aWriter, aDataList, 0, sDateFormatList);
+        }
+
+        public void AppendData(MachAppendWriter aWriter, List<object> aDataList, List<string> aDateFormatList = null)
+        {
+            AppendDataWithTime(aWriter, aDataList, 0, aDateFormatList);
+        }
+
+        public void AppendDataWithTime(MachAppendWriter aWriter, List<object> aDataList, DateTime aArrivalTime, string aDateFormat = null)
+        {
+            List<string> sDateFormatList = null;
+            if (aDateFormat != null)
+            {
+                sDateFormatList = new List<string>();
+                sDateFormatList.Add(aDateFormat);
+            }
+
+            // NOTE : DateTime expresses since 0001/01/01 00:00:00.000
+            long sTicks = aArrivalTime.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+            if (sTicks < 0)
+                throw new MachException("_arrival_time to append is less than 1970-01-01.");
+
+            // Resolution of Ticks = 100 nanosecond
+            AppendDataWithTime(aWriter, aDataList, (ulong)(sTicks * 100), sDateFormatList);
+        }
+
+        public void AppendDataWithTime(MachAppendWriter aWriter, List<object> aDataList, DateTime aArrivalTime, List<string> aDateFormatList = null)
         {
             // NOTE : DateTime expresses since 0001/01/01 00:00:00.000
             long sTicks = aArrivalTime.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
@@ -255,17 +290,17 @@ namespace Mach.Data.MachClient
                 throw new MachException("_arrival_time to append is less than 1970-01-01.");
 
             // Resolution of Ticks = 100 nanosecond
-            AppendDataWithTime(aWriter, aDataList, (ulong)(sTicks * 100));
+            AppendDataWithTime(aWriter, aDataList, (ulong)(sTicks * 100), aDateFormatList);
         }
 
-        public void AppendDataWithTime(MachAppendWriter aWriter, List<object> aDataList, ulong aArrivalTimeLong)
+        public void AppendDataWithTime(MachAppendWriter aWriter, List<object> aDataList, ulong aArrivalTimeLong, List<string> aDateFormatList)
         {
             bool sFlushed = false;
 
             if (m_isAppendOpened == false)
                 throw new MachException(String.Format(MachErrorMsg.APPEND_ALREADY_CLOSED, "APPEND_DATA"));
 
-            aWriter.writeData(aDataList, aArrivalTimeLong);
+            aWriter.writeData(aDataList, aArrivalTimeLong, aDateFormatList);
             aWriter.AppendAddCount++;
 
             if (aWriter.ExceedBuffer == true)
@@ -376,7 +411,7 @@ namespace Mach.Data.MachClient
             try
             {
                 if (sIsSent == false)
-                { 
+                {
                     // make and send APPEND_CLOSE
                     sAppendCloseProtocol.Generate(aWriter);
                     Connection.Session.Send(sAppendCloseProtocol);
@@ -500,7 +535,7 @@ namespace Mach.Data.MachClient
             if (CommandText == null)
                 throw new ArgumentNullException("CommandText", "MachCommand doesn't have any query string text.");
 
-            if ((Connection.State == ConnectionState.Broken) || 
+            if ((Connection.State == ConnectionState.Broken) ||
                 (Connection.State == ConnectionState.Closed) ||
                 (Connection.State == ConnectionState.Connecting))
                 throw new MachException(String.Format(MachErrorMsg.INVALID_CONNECTION, Connection.State.ToString("g")));

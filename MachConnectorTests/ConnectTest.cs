@@ -34,7 +34,7 @@ namespace MachConnectorTests
         public void ConnectAndExecDirect()
         {
             using (MachConnection sConn = new MachConnection(Utility.SERVER_STRING))
-            { 
+            {
                 sConn.Open();
 
                 Utility.ExecuteQuery(sConn, "drop table t1;", ErrorCheckType.ERROR_CHECK_NO);
@@ -43,7 +43,7 @@ namespace MachConnectorTests
                 Utility.ExecuteQuery(sConn, "insert into t1(i1) values (2);");
 
                 using (MachCommand sCommand = new MachCommand("select * from t1;", sConn))
-                { 
+                {
                     MachDataReader sDataReader = sCommand.ExecuteReader();
 
                     while (sDataReader.Read())
@@ -51,8 +51,8 @@ namespace MachConnectorTests
                         output.WriteLine("==========");
                         for (int i = 0; i < sDataReader.FieldCount; i++)
                         {
-                            output.WriteLine(String.Format("{0} : {1} ({2}/{3})", 
-                                                           sDataReader.GetName(i), 
+                            output.WriteLine(String.Format("{0} : {1} ({2}/{3})",
+                                                           sDataReader.GetName(i),
                                                            sDataReader.GetValue(i),
                                                            sDataReader.GetDataTypeName(i),
                                                            sDataReader.GetFieldType(i)));
@@ -77,7 +77,7 @@ namespace MachConnectorTests
         public void SelectWithParam()
         {
             using (MachConnection sConn = new MachConnection(Utility.SERVER_STRING))
-            { 
+            {
                 sConn.Open();
 
                 Utility.ExecuteQuery(sConn, "drop table t1;", ErrorCheckType.ERROR_CHECK_NO);
@@ -88,7 +88,7 @@ namespace MachConnectorTests
                 Utility.ExecuteQuery(sConn, "insert into t1 values (4, '2017-12-24');");
 
                 using (MachCommand sCommand = new MachCommand("select * from t1 where start_date > @Date;", sConn, null))
-                { 
+                {
                     sCommand.ParameterCollection.Add(new MachParameter { ParameterName = "@Date", Value = new DateTime(2017, 12, 22, 0, 0, 0) });
 
                     MachDataReader sDataReader = sCommand.ExecuteReader();
@@ -141,7 +141,7 @@ namespace MachConnectorTests
                 Utility.ExecuteQuery(sConn, "create table t1 (i1 int);");
 
                 using (MachCommand sCommand = new MachCommand(sConn, null))
-                { 
+                {
                     MachAppendWriter sWriter = sCommand.AppendOpen("t1");
 
                     var sList = new List<object>();
@@ -197,7 +197,7 @@ namespace MachConnectorTests
                     MachAppendWriter sWriter = sCommand.AppendOpen("t1");
 
                     var sList = new List<object>();
-                    
+
                     for (int i = 1; i <= 15; i++)
                     {
                         sList.Add(i);
@@ -269,7 +269,7 @@ namespace MachConnectorTests
         public void AppendIPTest()
         {
             using (MachConnection sConn = new MachConnection(Utility.SERVER_STRING))
-            { 
+            {
                 sConn.Open();
 
                 Utility.ExecuteQuery(sConn, "drop table t1;", ErrorCheckType.ERROR_CHECK_NO);
@@ -311,8 +311,78 @@ namespace MachConnectorTests
             }
         }
 
+        [Fact]
+        public void DatetimeTest()
+        {
+            string[] m_dateFormat =
+            {
+                "yyyy-MM-dd HH:mm:ss fffffff",
+                "yyyy-MM-dd HH:mm:ss ffffff",
+                "yyyy-MM-dd HH:mm:ss fff",
+                "yyyy-MM-dd HH:mm",
+                "yyyy-MM-dd HH",
+                "yyyy-MM-dd",
+                "yyyy-MM",
+                "yyyy",
+                "MM-yyyy",
+                "dd-MM-yyyy",
+                "HH MM-dd-yyyy",
+                "ss:mm:HH yyyy-MM-dd"
+            };
+            using (MachConnection sConn = new MachConnection(Utility.SERVER_STRING))
+            {
+                sConn.Open();
+
+                Utility.ExecuteQuery(sConn, "drop table t1;", ErrorCheckType.ERROR_CHECK_NO);
+                Utility.ExecuteQuery(sConn, "create table t1 (d1 datetime);");
+
+                using (MachCommand sCommand = new MachCommand(sConn, null))
+                {
+                    MachAppendWriter sWriter = sCommand.AppendOpen("t1");
+                    string dt;
+                    var sList = new List<object>();
+                    List<string> sDateFormatList = new List<string>();
+
+                    for (int i = 0; i < 12; i++)
+                    {
+                        sDateFormatList.Add(m_dateFormat[i]);
+                        dt = DateTime.Now.ToString(m_dateFormat[i]);            // DateFormatList
+                        sList.Add(dt);
+
+                        sCommand.AppendData(sWriter, sList, sDateFormatList);
+                        sList.Clear();
+                    }
+                    dt = DateTime.Now.ToString("yyyy-dd-MM HH:mm:ss fff");      // Specified DateFormat
+                    sList.Add(dt);
+
+                    sCommand.AppendData(sWriter, sList, "yyyy-dd-MM HH:mm:ss fff");
+                    sList.Clear();
+
+                    sCommand.AppendClose(sWriter);
+                }
+
+                using (MachCommand sCommand = new MachCommand("select * from t1 order by 1;", sConn, null))
+                {
+                    MachDataReader sDataReader = sCommand.ExecuteReader();
+
+                    while (sDataReader.Read())
+                    {
+                        output.WriteLine("==========");
+                        for (int i = 0; i < sDataReader.FieldCount; i++)
+                        {
+                            output.WriteLine(String.Format("{0} : {1}",
+                                                           sDataReader.GetName(i),
+                                                           sDataReader.GetValue(i)));
+                        }
+                    }
+                }
+
+                Utility.ExecuteQuery(sConn, "drop table t1;");
+            }
+        }
+
         /*****************************************************************
-         * For testing of storing protocol payload buffer 
+         * For testing of storing protocol payload buffer
          *****************************************************************/
 
         [Fact]
