@@ -9,7 +9,7 @@ namespace Mach.Core
     static class Version
     {
         public const int MAJOR = 2;
-        public const int MINOR = 1;
+        public const int MINOR = 2;
         public const int FIX   = 0;
     }
 }
