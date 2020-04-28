@@ -94,6 +94,7 @@ namespace Mach.Data.MachClient
 
         private void DoClose(ConnectionState aState)
         {
+            m_flushThreadRunning = false;
             if (m_command != null)
             {
                 if (!m_command.IsDisposed())
@@ -150,7 +151,9 @@ namespace Mach.Data.MachClient
 
         protected override DbCommand CreateDbCommand()
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            MachCommand sCmd = new MachCommand(this);
+            return sCmd;
         }
 
         private bool m_hasBeenOpened;
@@ -163,6 +166,7 @@ namespace Mach.Data.MachClient
             m_connectionSettings = new ConnectionSettings(m_connectionStringBuilder);
             Session = new Session();
             m_hasBeenOpened = false;
+            m_flushThreadRunning = false;
             SetState(ConnectionState.Closed);
         }
 
@@ -231,5 +235,65 @@ namespace Mach.Data.MachClient
 
         private MachCommand m_command;
 
+        private bool m_flushThreadRunning;
+
+        private void RunAutoFlush()
+        {
+            while (m_flushThreadRunning)
+            {
+                if ((m_command != null && m_command.IsAppendOpened && m_command.CurrentAppendWriter != null) && ((TimeSpan)(DateTime.Now - m_command.LastFlushTime)).TotalMilliseconds >= m_command.AppendFlushInterval)
+                {
+                    m_command.AppendFlush(m_command.CurrentAppendWriter);
+                }
+                Thread.Sleep(100);
+            }
+        }
+
+        public void SetConnectAppendFlush(bool aActiveFlush)
+        {
+            if (!m_hasBeenOpened)
+            {
+                throw new MachException("Not connected");
+            }
+            if (TryLock() == false)
+            {
+                throw new MachException(String.Format(MachErrorMsg.CONCURRENT_STATEMENT_EXECUTE, StatusString));
+            }
+            try
+            {
+                if (aActiveFlush)
+                {
+                    if (m_flushThreadRunning)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        // MachCommand ---> Thread run
+                        m_flushThreadRunning = true;
+                        Thread sThr = new Thread(RunAutoFlush);
+                        sThr.Start();
+                    }
+                }
+                else
+                {
+                    if (m_flushThreadRunning)
+                    {
+                        // MachCommand ---> set thread stop
+                        m_flushThreadRunning = false;
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+            }
+            finally
+            {
+                Unlock();
+            }
+
+            return;
+        }
     }
 }

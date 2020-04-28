@@ -7,8 +7,10 @@ using System.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Mach.Comm;
 using Xunit.Abstractions;
+using Dapper;
 
 namespace MachConnectorTests
 {
@@ -433,5 +435,152 @@ namespace MachConnectorTests
             Assert.True(sBytes[1] == 255);
             //Assert.True(BitConverter.ToInt64(sBytes.Reverse().ToArray(), 0) == 255);
         }
+
+        /*****************************************************************
+         * For testing Dapper
+         *****************************************************************/
+
+        [Fact]
+        public void DapperTest()
+        {
+            using (MachConnection sConn = new MachConnection(Utility.SERVER_STRING))
+            {
+                sConn.Open();
+                sConn.Execute("create table t1 (id varchar(20), i1 integer, i2 long);");
+                sConn.Execute("insert into t1 values ('ID1', 11, 12);");
+                sConn.Execute("insert into t1 values ('ID2', 21, 22);");
+                sConn.Execute("insert into t1 values ('ID3', 31, 32);");
+
+                output.WriteLine("========== (select * from t1)");
+
+                var sData = sConn.Query<sTest>("select * from t1").ToList();
+                foreach (var sItem in sData)
+                {
+                    output.WriteLine(String.Format("{0} : {1}, {2}", sItem.id, sItem.i1, sItem.i2));
+                }
+
+                output.WriteLine("========== (select * from t1 where id=@id)");
+
+                sData = sConn.Query<sTest>("select * from t1 where id=@id", new {id="ID1"}).ToList();
+                foreach (var sItem in sData)
+                {
+                    output.WriteLine(String.Format("{0} : {1}, {2}", sItem.id, sItem.i1, sItem.i2));
+                }
+                sConn.Execute("drop table t1;");
+                sConn.Close();
+            }
+        }
+
+        /*****************************************************************
+         * For testing SetConnectAppendFlush() & SetAppendInterval()
+         *****************************************************************/
+
+        [Fact]
+        public void TimedFlushTest()
+        {
+            int sCheck3, sCheck5 = 0;
+            using (MachConnection sConn = new MachConnection(Utility.SERVER_STRING), sConn1 = new MachConnection(Utility.SERVER_STRING), sConn2 = new MachConnection(Utility.SERVER_STRING), sConn3 = new MachConnection(Utility.SERVER_STRING))
+            {
+                sConn.Open();
+                sConn1.Open();
+                sConn2.Open();
+                sConn3.Open();
+
+                Utility.ExecuteQuery(sConn, "drop table t1;", ErrorCheckType.ERROR_CHECK_NO);
+                Utility.ExecuteQuery(sConn, "drop table t2;", ErrorCheckType.ERROR_CHECK_NO);
+                Utility.ExecuteQuery(sConn, "drop table t3;", ErrorCheckType.ERROR_CHECK_NO);
+                Utility.ExecuteQuery(sConn, "create table t1 (s1 varchar(20));");
+                Utility.ExecuteQuery(sConn, "create table t2 (s1 varchar(20));");
+                Utility.ExecuteQuery(sConn, "create table t3 (s1 varchar(20));");
+
+                output.WriteLine("Set Auto Append Flush on T1 & T2 (interval = 1 sec)");
+                sConn1.SetConnectAppendFlush(true);
+                sConn2.SetConnectAppendFlush(true);
+
+                using (MachCommand sCommand = new MachCommand(sConn), sCommand1 = new MachCommand(sConn1), sCommand2 = new MachCommand(sConn2, null), sCommand3 = new MachCommand(sConn3))
+                {
+                    MachAppendWriter sWriter1 = sCommand1.AppendOpen("t1");
+                    MachAppendWriter sWriter2 = sCommand2.AppendOpen("t2");
+                    MachAppendWriter sWriter3 = sCommand3.AppendOpen("t3");
+                    output.WriteLine("Set Append Flush interval on T2 to 5 sec.");
+                    sCommand2.SetAppendInterval(5000);
+
+                    output.WriteLine("Append 100 rows to all tables.");
+                    var sList = new List<object>();
+                    for (int i = 0; i < 100; i++)
+                    {
+                        sList.Add(i.ToString());
+                        sCommand1.AppendData(sWriter1, sList);
+                        sCommand2.AppendData(sWriter2, sList);
+                        sCommand3.AppendData(sWriter3, sList);
+                        sList.Clear();
+                    }
+
+                    output.WriteLine("==========");
+                    var sData = sConn.Query<sCount>("select count(*) cnt from t1;").ToList();
+                    output.WriteLine(String.Format("T1 : {0}", sData[0].cnt));
+                    sData = sConn.Query<sCount>("select count(*) cnt from t2;").ToList();
+                    output.WriteLine(String.Format("T2 : {0}", sData[0].cnt));
+                    sData = sConn.Query<sCount>("select count(*) cnt from t3;").ToList();
+                    output.WriteLine(String.Format("T3 : {0}", sData[0].cnt));
+
+                    Thread.Sleep(3000);
+                    output.WriteLine("========== (sleep 3 sec, T1 -> 100)");
+                    sData = sConn.Query<sCount>("select count(*) cnt from t1;").ToList();
+                    sCheck3 = sData[0].cnt;
+                    output.WriteLine(String.Format("T1 : {0}", sData[0].cnt));
+                    sData = sConn.Query<sCount>("select count(*) cnt from t2;").ToList();
+                    output.WriteLine(String.Format("T2 : {0}", sData[0].cnt));
+                    sData = sConn.Query<sCount>("select count(*) cnt from t3;").ToList();
+                    output.WriteLine(String.Format("T3 : {0}", sData[0].cnt));
+
+                    Thread.Sleep(5000);
+                    output.WriteLine("========== (sleep 5 sec, T1 & T2 -> 100)");
+                    sData = sConn.Query<sCount>("select count(*) cnt from t1;").ToList();
+                    output.WriteLine(String.Format("T1 : {0}", sData[0].cnt));
+                    sData = sConn.Query<sCount>("select count(*) cnt from t2;").ToList();
+                    sCheck5 = sData[0].cnt;
+                    output.WriteLine(String.Format("T2 : {0}", sData[0].cnt));
+                    sData = sConn.Query<sCount>("select count(*) cnt from t3;").ToList();
+                    output.WriteLine(String.Format("T3 : {0}", sData[0].cnt));
+
+                    sCommand1.AppendClose(sWriter1);
+                    sCommand2.AppendClose(sWriter2);
+                    sCommand3.AppendClose(sWriter3);
+
+                    sConn1.SetConnectAppendFlush(false);
+                    sConn2.SetConnectAppendFlush(false);
+
+                    output.WriteLine("========== (append close, all -> 100)");
+                    sData = sConn.Query<sCount>("select count(*) cnt from t1;").ToList();
+                    output.WriteLine(String.Format("T1 : {0}", sData[0].cnt));
+                    sData = sConn.Query<sCount>("select count(*) cnt from t2;").ToList();
+                    output.WriteLine(String.Format("T2 : {0}", sData[0].cnt));
+                    sData = sConn.Query<sCount>("select count(*) cnt from t3;").ToList();
+                    output.WriteLine(String.Format("T3 : {0}", sData[0].cnt));
+                }
+
+                Utility.ExecuteQuery(sConn, "drop table t1;", ErrorCheckType.ERROR_CHECK_NO);
+                Utility.ExecuteQuery(sConn, "drop table t2;", ErrorCheckType.ERROR_CHECK_NO);
+                Utility.ExecuteQuery(sConn, "drop table t3;", ErrorCheckType.ERROR_CHECK_NO);
+
+                sConn.Close();
+                sConn1.Close();
+                sConn2.Close();
+                sConn3.Close();
+
+                Assert.True(sCheck3 == 100 && sCheck5 == 100);
+            }
+        }
+    }
+    class sTest
+    {
+        public string id { get; set; }
+        public int i1 { get; set; }
+        public long i2 { get; set; }
+    }
+    class sCount
+    {
+        public int cnt { get; set; }
     }
 }

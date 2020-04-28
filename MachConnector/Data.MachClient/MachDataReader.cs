@@ -162,7 +162,8 @@ namespace Mach.Data.MachClient
         {
             // if command has more than one query,
             // get the next query's result..
-            throw new NotSupportedException();
+            //throw new NotSupportedException();
+            return false;
         }
 
         public override bool Read()

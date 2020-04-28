@@ -21,6 +21,9 @@ namespace Mach.Data.MachClient
             ParameterCollection = new MachParameterCollection();
             m_isAppendOpened = false;
             m_queryUsed = false;
+            m_appendFlushInterval = 1000;
+            m_lastFlushTime = DateTime.Now;
+            m_appendWriter = null;
             if (Connection != null)
             {
                 Connection.addMachCommand(this);
@@ -62,6 +65,7 @@ namespace Mach.Data.MachClient
                     m_commandExecutor = null;
                     m_parameterCollection = null;
                     m_isAppendOpened = false;
+                    m_appendWriter = null;
 
                     if (Connection != null)
                     {
@@ -188,6 +192,13 @@ namespace Mach.Data.MachClient
             }
         }
 
+        private int m_appendFlushInterval;
+        private DateTime m_lastFlushTime;
+        private MachAppendWriter m_appendWriter;
+        public int AppendFlushInterval { get => m_appendFlushInterval; set => m_appendFlushInterval = value; }
+        public DateTime LastFlushTime { get => m_lastFlushTime; set => m_lastFlushTime = value; }
+        public MachAppendWriter CurrentAppendWriter { get => m_appendWriter; set => m_appendWriter = value; }
+
         /** APPEND **/
 
         public MachAppendWriter AppendOpen(string aTableName, int aErrorCheckCount, MachAppendOption aOption)
@@ -216,6 +227,7 @@ namespace Mach.Data.MachClient
                 sAppendOpenProtocol.Generate(aTableName, sWriter);
                 Connection.Session.Transmit(sAppendOpenProtocol, Connection.DefaultCommandTimeout); // AppendMeta of sWriter will be filled.
                 m_isAppendOpened = true;
+                m_appendWriter = sWriter;
 
                 return sWriter;
             }
@@ -223,6 +235,7 @@ namespace Mach.Data.MachClient
             {
                 m_connection.Close(ConnectionState.Broken);
                 m_isAppendOpened = false;
+                m_appendWriter = null;
 
                 throw se;
             }
@@ -331,6 +344,7 @@ namespace Mach.Data.MachClient
                 {
                     m_connection.Close(ConnectionState.Broken);
                     m_isAppendOpened = false;
+                    m_appendWriter = null;
 
                     throw se;
                 }
@@ -369,11 +383,13 @@ namespace Mach.Data.MachClient
                 }
 
                 AppendCheckError(aWriter, sAppendDataProtocol);
+                m_lastFlushTime = DateTime.Now;
             }
             catch (SocketException se)
             {
                 m_connection.Close(ConnectionState.Broken);
                 m_isAppendOpened = false;
+                m_appendWriter = null;
 
                 throw se;
             }
@@ -425,6 +441,7 @@ namespace Mach.Data.MachClient
             {
                 m_connection.Close(ConnectionState.Broken);
                 m_isAppendOpened = false;
+                m_appendWriter = null;
 
                 throw se;
             }
@@ -436,8 +453,21 @@ namespace Mach.Data.MachClient
             finally
             {
                 m_isAppendOpened = false;
+                m_appendWriter = null;
                 m_connection.Unlock();
             }
+        }
+
+        public void SetAppendInterval(int aMilliSecond)
+        {
+            string sStatusStringToBe = "SET_APPEND_INTERVAL";
+            if (m_isAppendOpened == false)
+                throw new MachException("APPEND is not opened.");
+            if (m_connection.TryLock() == false)
+                throw new MachException(String.Format(MachErrorMsg.CONCURRENT_STATEMENT_EXECUTE, m_connection.StatusString));
+            m_connection.StatusString = sStatusStringToBe;
+            m_appendFlushInterval = aMilliSecond;
+            m_connection.Unlock();
         }
 
         /** END of APPEND **/
@@ -470,6 +500,7 @@ namespace Mach.Data.MachClient
             {
                 m_connection.Close(ConnectionState.Broken);
                 m_isAppendOpened = false;
+                m_appendWriter = null;
 
                 throw se;
             }
@@ -507,6 +538,7 @@ namespace Mach.Data.MachClient
             {
                 m_connection.Close(ConnectionState.Broken);
                 m_isAppendOpened = false;
+                m_appendWriter = null;
 
                 throw se;
             }
@@ -556,6 +588,7 @@ namespace Mach.Data.MachClient
             {
                 m_connection.Close(ConnectionState.Broken);
                 m_isAppendOpened = false;
+                m_appendWriter = null;
 
                 throw se;
             }
