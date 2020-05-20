@@ -287,7 +287,8 @@ namespace Mach.Data.MachClient
             }
 
             // NOTE : DateTime expresses since 0001/01/01 00:00:00.000
-            long sTicks = aArrivalTime.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+            //long sTicks = aArrivalTime.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+            long sTicks = aArrivalTime.ToUniversalTime().Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
             if (sTicks < 0)
                 throw new MachException("_arrival_time to append is less than 1970-01-01.");
 
@@ -298,7 +299,8 @@ namespace Mach.Data.MachClient
         public void AppendDataWithTime(MachAppendWriter aWriter, List<object> aDataList, DateTime aArrivalTime, List<string> aDateFormatList = null)
         {
             // NOTE : DateTime expresses since 0001/01/01 00:00:00.000
-            long sTicks = aArrivalTime.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+            //long sTicks = aArrivalTime.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+            long sTicks = aArrivalTime.ToUniversalTime().Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
             if (sTicks < 0)
                 throw new MachException("_arrival_time to append is less than 1970-01-01.");
 

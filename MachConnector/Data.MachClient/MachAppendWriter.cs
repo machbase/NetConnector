@@ -306,7 +306,7 @@ namespace Mach.Data.MachClient
                                     try
                                     {
                                         sAppendTime = DateTime.ParseExact((string)aDataList[i], sFormatString, System.Globalization.CultureInfo.InvariantCulture);
-                                        long sTicks = sAppendTime.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+                                        long sTicks = sAppendTime.ToUniversalTime().Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
                                         if (sTicks < 0)
                                         {

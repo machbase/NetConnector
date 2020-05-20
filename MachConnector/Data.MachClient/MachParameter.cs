@@ -127,7 +127,8 @@ namespace Mach.Data.MachClient
             }
             else if (Value is DateTime sTimeValue)
             {
-                long sTicks = sTimeValue.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+                //long sTicks = sTimeValue.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+                long sTicks = sTimeValue.ToUniversalTime().Ticks - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
                 writer.WriteUtf8("{0}".FormatInvariant(sTicks * 100));
                 // writer.WriteUtf8("to_date('{0:yyyy'-'MM'-'dd' 'HH':'mm':'ss}')".FormatInvariant(Value));
             }
